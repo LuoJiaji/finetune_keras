@@ -16,6 +16,8 @@ print(interlayer_weights[0].shape)
 interlayer_weights = base_model.get_layer('block5_conv2').get_weights()
 print(interlayer_weights[0].shape)
 
+
+
 # VGG16一共23层
 # layers =  base_model.layers
 num_layers = len(base_model.layers)
