@@ -10,7 +10,7 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPooling2D
 
 batch_size = 32
-epochs = 10
+epochs = 3
 dataset_path = './data_set'
 
 # 图像Generator，用来构建输入数据
@@ -54,7 +54,11 @@ model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['ac
 model.summary()
 
 history = model.fit_generator(train_generator,
-                   steps_per_epoch = 20, 
+                   steps_per_epoch = 3, 
                    epochs = epochs)
+
+
+# 得到训练过程的loss和正确率
+log = history.history
 
     

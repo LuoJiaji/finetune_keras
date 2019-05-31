@@ -9,7 +9,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten
 
 batch_size = 32
-epochs = 10
+epochs = 3
 base_model = VGG16()
 base_model.summary()
 
@@ -78,10 +78,10 @@ model.summary()
 ##                    validation_steps = batch_size)
 # 
 #
-#model.fit_generator(train_generator,
-#                   steps_per_epoch = 20, 
-#                   epochs = epochs)
-
+history = model.fit_generator(train_generator,
+                   steps_per_epoch = 3, 
+                   epochs = epochs)
+log = history.history
 
 path = './data_set/daisy/'
 filename = os.listdir('./data_set/daisy/')
