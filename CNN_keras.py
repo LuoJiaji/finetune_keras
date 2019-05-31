@@ -56,3 +56,5 @@ model.summary()
 history = model.fit_generator(train_generator,
                    steps_per_epoch = 20, 
                    epochs = epochs)
+
+    

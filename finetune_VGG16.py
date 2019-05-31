@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from keras.applications.vgg16 import VGG16, preprocess_input
@@ -77,8 +78,26 @@ model.summary()
 ##                    validation_steps = batch_size)
 # 
 #
-model.fit_generator(train_generator,
-                   steps_per_epoch = 20, 
-                   epochs = epochs)
+#model.fit_generator(train_generator,
+#                   steps_per_epoch = 20, 
+#                   epochs = epochs)
+
+
+path = './data_set/daisy/'
+filename = os.listdir('./data_set/daisy/')
+
+img_list = []
+for i in filename[:10]:
+    print(i)
+    filepath = path+i
+    print(filepath)
+    img = image.load_img(filepath, target_size=(224, 224))
+    x = image.img_to_array(img)
+    img_list += [x]
+x = np.array(img_list)
+x = preprocess_input(x)   
+pre = model.predict(x)
+
+
 
 
