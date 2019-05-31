@@ -35,10 +35,10 @@ x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(i
 x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
-# Block 2
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
+# # Block 2
+# x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
+# x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
+# x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
 
 # Classification block
 # x = Flatten(name='flatten')(x)
@@ -49,10 +49,10 @@ x = Dropout(0.5)(x)
 x = Dense(5, activation='softmax', name='predictions')(x)
 
 model = Model(input = input_tensor, output = x)
-model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
 
-model.fit_generator(train_generator,
-                   steps_per_epoch = 64, 
+history = model.fit_generator(train_generator,
+                   steps_per_epoch = 20, 
                    epochs = epochs)
