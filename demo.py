@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from keras.applications.vgg16 import VGG16, preprocess_input
 from keras.models import Model
 from keras.preprocessing import image
+from keras.preprocessing.image import load_img
 
 
 
@@ -34,3 +35,11 @@ for x in base_model.trainable_weights:
     print(x.name)
 
 # model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc2').output)
+    
+
+img = load_img('./img/me.jpg',target_size=(224,224))
+x = image.img_to_array(img)
+x = np.expand_dims(x, axis=0)
+x = preprocess_input(x)
+
+pre = base_model.predict(x)
