@@ -1,6 +1,5 @@
 import os
 import random
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from keras.applications.vgg16 import VGG16, preprocess_input
@@ -11,37 +10,55 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten
 
 batch_size = 32
-epochs = 3
-dataset_path = './data_set/'
-
-filename = os.listdir(dataset_path)
-train_percentage = 95
 img_width = 224
 img_height = 224
-n_calss = len(os.listdir(dataset_path))
+
+train_dataset_path = './dataset8/train/'
+test_data_path = './dataset8/test/'
+filename = os.listdir(train_dataset_path)
+n_calss = len(os.listdir(train_dataset_path))
 
 
-def get_datalist(datapath,train_percentage=90):
-    train_datapath = []
-    train_label = []
-    test_datapath = []
-    test_label = []
-
+def get_datalist(datapath):
+    
     filename = os.listdir(datapath)
+    datafile = []
+    label = []
+    
+    print(filename)
     for i,path in enumerate(filename):
-       dataname  = os.listdir(datapath+path)
-       print(path,len(dataname))
-       for file in dataname:
-           chance = np.random.randint(100)
-           if chance < train_percentage:
-               train_datapath.append(datapath + path+ '/' + file)
-               train_label.append(i)
-           else:
-               test_datapath.append(datapath + path + '/' + file)
-               test_label.append(i)
-    print('train data:',len(train_datapath))
-    print('test data:',len(test_datapath))
-    return [train_datapath,train_label,test_datapath,test_label]
+        dataname  = os.listdir(os.path.join(datapath,path))
+        print(path,':',len(dataname))
+        
+        for file in dataname:
+#            datafile.append(os.path.join(datapath,path,file))
+            datafile.append(datapath+path+'/'+file)
+            label.append(i)
+        
+    return datafile,label
+
+
+# def get_datalist(datapath,train_percentage=90):
+#     train_datapath = []
+#     train_label = []
+#     test_datapath = []
+#     test_label = []
+
+#     filename = os.listdir(datapath)
+#     for i,path in enumerate(filename):
+#        dataname  = os.listdir(datapath+path)
+#        print(path,len(dataname))
+#        for file in dataname:
+#            chance = np.random.randint(100)
+#            if chance < train_percentage:
+#                train_datapath.append(datapath + path+ '/' + file)
+#                train_label.append(i)
+#            else:
+#                test_datapath.append(datapath + path + '/' + file)
+#                test_label.append(i)
+#     print('train data:',len(train_datapath))
+#     print('test data:',len(test_datapath))
+#     return [train_datapath,train_label,test_datapath,test_label]
 
 
 def get_random_batch(train_datapath,train_label,batchsize,n_calss,img_width,img_height):
@@ -54,31 +71,39 @@ def get_random_batch(train_datapath,train_label,batchsize,n_calss,img_width,img_
     i = 0
     for _ in range(batchsize):
         image_index = random.randrange(l)
-        img = cv2.imread(train_datapath[image_index])
-        train_data[i,:,:,:]  = cv2.resize(img,(img_height,img_width))
+        # img = cv2.imread(train_datapath[image_index])
+        # train_data[i,:,:,:]  = cv2.resize(img,(img_height,img_width))
+
+        img = image.load_img(train_datapath[image_index], target_size=(img_height, img_width))
+        img = image.img_to_array(img)
+        # x = np.expand_dims(x, axis=0)
+        img = preprocess_input(img)
+        train_data[i,:,:,:]  = img
+
         train_label_onehot[i,int(train_label[image_index])] = 1
 #        print(i,image_index,train_datapath[image_index])
         i += 1
     return train_data,train_label_onehot
 
 # 加载文件路径
-train_datapath,train_label,test_datapath,test_label = get_datalist(dataset_path,train_percentage)
-train_data,train_label_onehot = get_random_batch(train_datapath,
-                                                 train_label,
-                                                 batch_size,
-                                                 n_calss,
-                                                 img_width,
-                                                 img_height)
+train_datapath,train_label = get_datalist(train_dataset_path)
+test_datalist,test_label = get_datalist(test_data_path) 
 
+# train_data,train_label_onehot = get_random_batch(train_datapath,
+#                                                  train_label,
+#                                                  batch_size,
+#                                                  n_calss,
+#                                                  img_width,
+#                                                  img_height)
 
 base_model = VGG16()
 base_model.summary()
 
-interlayer_weights = base_model.get_layer('block2_conv2').get_weights()
-print(interlayer_weights[0].shape)
+# interlayer_weights = base_model.get_layer('block2_conv2').get_weights()
+# print(interlayer_weights[0].shape)
 
-interlayer_weights = base_model.get_layer('block5_conv2').get_weights()
-print(interlayer_weights[0].shape)
+# interlayer_weights = base_model.get_layer('block5_conv2').get_weights()
+# print(interlayer_weights[0].shape)
 
 # VGG16一共23层
 # layers =  base_model.layers
@@ -97,7 +122,7 @@ for x in base_model.trainable_weights:
 
 x = GlobalAveragePooling2D(name='average_pooling')(base_model.get_layer('block5_conv3').output)
 x = Dense(128,name = 'fc_1')(x)
-prediction = Dense(5,activation='softmax',name='fc_2')(x)
+prediction = Dense(n_calss,activation='softmax',name='fc_2')(x)
 print(x.shape)
               
 model = Model(inputs=base_model.input, outputs=prediction)
@@ -130,11 +155,8 @@ model.summary()
 # class_numbers = train_generator.class_indices
 # print('image numbers:',image_numbers)
 # print('class',class_numbers)
-#
-#
 
 
-#
 ##model.fit_generator(train_generator,
 ##                    steps_per_epoch = image_numbers, 
 ##                    batch_size, epochs = epochs, 
@@ -146,34 +168,42 @@ model.summary()
 #                    steps_per_epoch = 3, 
 #                    epochs = epochs)
 # log = history.history
-
-for i in range(5):
+STEPS = 5000
+for it in range(STEPS):
     train_data,train_label_onehot = get_random_batch(train_datapath,
-                                                 train_label,
-                                                 batch_size,
-                                                 n_calss,
-                                                 img_width,
-                                                 img_height)
+                                                     train_label,
+                                                     batch_size,
+                                                     n_calss,
+                                                     img_width,
+                                                     img_height)
     train_data = train_data.astype('float')
     train_loss, train_accuracy = model.train_on_batch(train_data, train_label_onehot)
-    print('iteration:',i,'loss:',train_loss,'accuracy:',train_accuracy)
-
-path = './data_set/daisy/'
-filename = os.listdir('./data_set/daisy/')
-
-# 简答测试
-img_list = []
-for i in filename[:10]:
-    print(i)
-    filepath = path+i
-    print(filepath)
-    img = image.load_img(filepath, target_size=(224, 224))
-    x = image.img_to_array(img)
-    img_list += [x]
-x = np.array(img_list)
-x = preprocess_input(x)   
-pre = model.predict(x)
+    print('iteration:',it,'loss:',train_loss,'accuracy:',train_accuracy)
 
 
+    if (it+1) % 1000 == 0 or it + 1 == STEPS:
+        pre = []
+        l = len(test_datalist)
+        for i, path in enumerate(test_datalist):
+            if i%10 == 0:
+                print('\r',i,'/',l,end = '')
+            
+            # img = cv2.imread(path)
+            # img  = cv2.resize(img,(img_height,img_width))
+            # # print(img.shape)
+            # img = np.expand_dims(img,axis = 0)
+            # print(img.shape)
+            img = image.load_img(path, target_size=(img_width, img_width))
+            img = image.img_to_array(img)
+            img = np.expand_dims(img, axis=0)
+            img = preprocess_input(img)
+            pre += [np.argmax(model.predict(img))]
+        pre = np.array(pre)    
+        test_label = np.array(test_label)
+        # print('pre shape:',pre.shape,'test label shape:',test_label.shape)
+        acc = np.mean(pre==test_label)
+        print('\r','*'*50)
+        print('test accuracy:',acc)
 
+model.save('./model/keras/finetune_VGG16.h5')    
 

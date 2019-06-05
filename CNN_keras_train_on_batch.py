@@ -11,9 +11,10 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten, Input,Dropout
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPooling2D
+from keras.optimizers import SGD
+
 
 batch_size = 128
-epochs = 3
 dataset_path = './data_set/'
 
 filename = os.listdir(dataset_path)
@@ -74,7 +75,7 @@ train_data,train_label_onehot = get_random_batch(train_datapath,
 
 input_shape = (img_width, img_height, 3)
 input_tensor=Input(shape=input_shape)
-x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(input_tensor)
+x = Conv2D(32, (7, 7), activation='relu', padding='same', name='block1_conv1')(input_tensor)
 x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
@@ -92,11 +93,13 @@ x = Dropout(0.5)(x)
 x = Dense(5, activation='softmax', name='predictions')(x)
 
 model = Model(inputs= input_tensor, outputs = x)
-model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+optimizer = SGD()
+# model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=optimizer , loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
     
-for i in range(1000):
+for i in range(5000):
     train_data,train_label_onehot = get_random_batch(train_datapath,
                                                  train_label,
                                                  batch_size,
