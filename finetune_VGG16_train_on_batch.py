@@ -9,7 +9,7 @@ from keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten
 
-batch_size = 32
+batch_size = 128
 img_width = 224
 img_height = 224
 
@@ -64,7 +64,7 @@ def get_datalist(datapath):
 def get_random_batch(train_datapath,train_label,batchsize,n_calss,img_width,img_height):
     
     train_data = np.zeros([batchsize,img_width,img_height,3])
-    train_data =  train_data.astype(np.uint8)
+    # train_data =  train_data.astype(np.uint8)
     train_label_onehot = np.zeros([batchsize,n_calss])
     
     l = len(train_datapath)
@@ -86,8 +86,8 @@ def get_random_batch(train_datapath,train_label,batchsize,n_calss,img_width,img_
     return train_data,train_label_onehot
 
 # 加载文件路径
-train_datapath,train_label = get_datalist(train_dataset_path)
-test_datalist,test_label = get_datalist(test_data_path) 
+train_datapath, train_label = get_datalist(train_dataset_path)
+test_datalist, test_label = get_datalist(test_data_path) 
 
 # train_data,train_label_onehot = get_random_batch(train_datapath,
 #                                                  train_label,
@@ -111,25 +111,32 @@ num_layers = len(base_model.layers)
 print('number of layers:',num_layers)
 
 print('layer name:') 
-for layers in base_model.layers[:num_layers-5]:
+for layers in base_model.layers[:num_layers]:
      layers.trainable = False
      print(layers.name)
     # print(type(layers))
-
+print('*'*50)
 print('trainable weights:')
 for x in base_model.trainable_weights:
     print(x.name)
 
-x = GlobalAveragePooling2D(name='average_pooling')(base_model.get_layer('block5_conv3').output)
+# x = GlobalAveragePooling2D(name='average_pooling')(base_model.get_layer('block5_conv3').output)
+x = base_model.get_layer('fc2').output
+
 x = Dense(128,name = 'fc_1')(x)
 prediction = Dense(n_calss,activation='softmax',name='fc_2')(x)
 print(x.shape)
               
 model = Model(inputs=base_model.input, outputs=prediction)
+
 model.compile(optimizer='rmsprop', loss='categorical_crossentropy',metrics=['accuracy'])
 
 model.summary()
-
+print('*'*50)
+print('trainable weights:')
+for x in model.trainable_weights:
+    print(x.name)
+quit()
 
 # model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc2').output)
 
@@ -169,6 +176,15 @@ model.summary()
 #                    epochs = epochs)
 # log = history.history
 STEPS = 5000
+log_file = './logs/finetune_VGG16_logs.csv'
+acc_file = './logs/finetune_VGG16_acc.csv'
+f_log = open(log_file,'w')
+f_log.write('iter,loss,train acc'+'\n')
+f_log.flush()
+f_acc = open(acc_file,'w')
+f_acc.write('iter,acc'+'\n')
+f_acc.flush()
+
 for it in range(STEPS):
     train_data,train_label_onehot = get_random_batch(train_datapath,
                                                      train_label,
@@ -176,17 +192,22 @@ for it in range(STEPS):
                                                      n_calss,
                                                      img_width,
                                                      img_height)
-    train_data = train_data.astype('float')
+    # train_data = train_data.astype('float')
     train_loss, train_accuracy = model.train_on_batch(train_data, train_label_onehot)
+    
+    temp = model.predict(train_data)
+#    quit()
+
     print('iteration:',it,'loss:',train_loss,'accuracy:',train_accuracy)
+    f_log.write(str(it)+','+str(train_loss)+','+str(train_accuracy)+'\n')
+    f_log.flush()
 
-
-    if (it+1) % 1000 == 0 or it + 1 == STEPS:
+    if (it+1) % 100 == 0 or it + 1 == STEPS:
         pre = []
         l = len(test_datalist)
         for i, path in enumerate(test_datalist):
-            if i%10 == 0:
-                print('\r',i,'/',l,end = '')
+            if i%100 == 0:
+                print('\r','test:',i,'/',l,end = '')
             
             # img = cv2.imread(path)
             # img  = cv2.resize(img,(img_height,img_width))
@@ -204,6 +225,9 @@ for it in range(STEPS):
         acc = np.mean(pre==test_label)
         print('\r','*'*50)
         print('test accuracy:',acc)
+        f_acc.write(str(it)+','+str(acc)+'\n')
+        f_acc.flush()
 
-model.save('./model/keras/finetune_VGG16.h5')    
-
+model.save('./models/keras/finetune_VGG16.h5')    
+f_log.close()
+f_acc.close()
