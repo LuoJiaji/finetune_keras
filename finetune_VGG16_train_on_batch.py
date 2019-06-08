@@ -8,6 +8,7 @@ from keras.preprocessing import image
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten
+from keras.layers.convolutional import Conv2D
 
 batch_size = 128
 img_width = 224
@@ -121,9 +122,13 @@ for x in base_model.trainable_weights:
     print(x.name)
 
 # x = GlobalAveragePooling2D(name='average_pooling')(base_model.get_layer('block5_conv3').output)
-x = base_model.get_layer('fc2').output
+x = base_model.get_layer('block5_conv3').output
+x = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block1_CNN')(x)
+x = GlobalAveragePooling2D(name='average_pooling')(x)
+# x = base_model.get_layer('fc2').output
 
 x = Dense(128,name = 'fc_1')(x)
+x = Dense(128,name = 'fc_11')(x)
 prediction = Dense(n_calss,activation='softmax',name='fc_2')(x)
 print(x.shape)
               
@@ -132,11 +137,7 @@ model = Model(inputs=base_model.input, outputs=prediction)
 model.compile(optimizer='rmsprop', loss='categorical_crossentropy',metrics=['accuracy'])
 
 model.summary()
-print('*'*50)
-print('trainable weights:')
-for x in model.trainable_weights:
-    print(x.name)
-quit()
+# quit()
 
 # model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc2').output)
 
@@ -175,7 +176,7 @@ quit()
 #                    steps_per_epoch = 3, 
 #                    epochs = epochs)
 # log = history.history
-STEPS = 5000
+STEPS = 20000
 log_file = './logs/finetune_VGG16_logs.csv'
 acc_file = './logs/finetune_VGG16_acc.csv'
 f_log = open(log_file,'w')
