@@ -1,18 +1,21 @@
 import os
 import random
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.preprocessing import image
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense, GlobalAveragePooling2D, Flatten
 from keras.layers.convolutional import Conv2D
+from sklearn.metrics import confusion_matrix
 
 batch_size = 128
 img_width = 224
 img_height = 224
+STATE = 'eval'
 
 train_dataset_path = './dataset8/train/'
 test_data_path = './dataset8/test/'
@@ -137,6 +140,7 @@ model = Model(inputs=base_model.input, outputs=prediction)
 model.compile(optimizer='rmsprop', loss='categorical_crossentropy',metrics=['accuracy'])
 
 model.summary()
+# model.save('./model/keras/VGG16_fc.h5')
 # quit()
 
 # model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc2').output)
@@ -176,59 +180,155 @@ model.summary()
 #                    steps_per_epoch = 3, 
 #                    epochs = epochs)
 # log = history.history
-STEPS = 20000
-log_file = './logs/finetune_VGG16_logs.csv'
-acc_file = './logs/finetune_VGG16_acc.csv'
-f_log = open(log_file,'w')
-f_log.write('iter,loss,train acc'+'\n')
-f_log.flush()
-f_acc = open(acc_file,'w')
-f_acc.write('iter,acc'+'\n')
-f_acc.flush()
 
-for it in range(STEPS):
-    train_data,train_label_onehot = get_random_batch(train_datapath,
-                                                     train_label,
-                                                     batch_size,
-                                                     n_calss,
-                                                     img_width,
-                                                     img_height)
-    # train_data = train_data.astype('float')
-    train_loss, train_accuracy = model.train_on_batch(train_data, train_label_onehot)
-    
-    temp = model.predict(train_data)
-#    quit()
+print('STATE:',STATE)
 
-    print('iteration:',it,'loss:',train_loss,'accuracy:',train_accuracy)
-    f_log.write(str(it)+','+str(train_loss)+','+str(train_accuracy)+'\n')
+if STATE == 'train':
+    STEPS = 20000
+    log_file = './logs/finetune_VGG16_logs.csv'
+    acc_file = './logs/finetune_VGG16_acc.csv'
+    f_log = open(log_file,'w')
+    f_log.write('iter,loss,train acc'+'\n')
     f_log.flush()
+    f_acc = open(acc_file,'w')
+    f_acc.write('iter,acc'+'\n')
+    f_acc.flush()
 
-    if (it+1) % 100 == 0 or it + 1 == STEPS:
-        pre = []
-        l = len(test_datalist)
-        for i, path in enumerate(test_datalist):
-            if i%100 == 0:
-                print('\r','test:',i,'/',l,end = '')
+    for it in range(STEPS):
+        train_data,train_label_onehot = get_random_batch(train_datapath,
+                                                        train_label,
+                                                        batch_size,
+                                                        n_calss,
+                                                        img_width,
+                                                        img_height)
+        # train_data = train_data.astype('float')
+        train_loss, train_accuracy = model.train_on_batch(train_data, train_label_onehot)
+        
+        temp = model.predict(train_data)
+    #    quit()
+
+        print('iteration:',it,'loss:',train_loss,'accuracy:',train_accuracy)
+        f_log.write(str(it)+','+str(train_loss)+','+str(train_accuracy)+'\n')
+        f_log.flush()
+
+        if (it+1) % 100 == 0 or it + 1 == STEPS:
+            pre = []
+            l = len(test_datalist)
+            for i, path in enumerate(test_datalist):
+                if i%100 == 0:
+                    print('\r','test:',i,'/',l,end = '')
+                
+                # img = cv2.imread(path)
+                # img  = cv2.resize(img,(img_height,img_width))
+                # # print(img.shape)
+                # img = np.expand_dims(img,axis = 0)
+                # print(img.shape)
+                img = image.load_img(path, target_size=(img_width, img_width))
+                img = image.img_to_array(img)
+                img = np.expand_dims(img, axis=0)
+                img = preprocess_input(img)
+                pre += [np.argmax(model.predict(img))]
+            pre = np.array(pre)    
+            test_label = np.array(test_label)
+            # print('pre shape:',pre.shape,'test label shape:',test_label.shape)
+            acc = np.mean(pre==test_label)
+            print('\r','*'*50)
+            print('test accuracy:',acc)
+            f_acc.write(str(it)+','+str(acc)+'\n')
+            f_acc.flush()
+
+    model.save('./models/keras/finetune_VGG16.h5')    
+    f_log.close()
+    f_acc.close()
+
+elif STATE == 'eval':
+    model = load_model('./model/keras/finetune_VGG16.h5')
+    result_file = './model/keras/results_divide_VGG16.csv'
+    # model.summary()
+    # quit()
+#    pre = []
+#    l = len(test_datalist)
+#    for i, path in enumerate(test_datalist[:15]):
+#        if i%10 == 0:
+#            print('\r','test:',i,'/',l,end = '')
+#        
+#        # img = cv2.imread(path)
+#        # img  = cv2.resize(img,(img_height,img_width))
+#        # # print(img.shape)
+#        # img = np.expand_dims(img,axis = 0)
+#        # print(img.shape)
+#        img = image.load_img(path, target_size=(img_width, img_width))
+#        img = image.img_to_array(img)
+#        img = np.expand_dims(img, axis=0)
+#        img = preprocess_input(img)
+#        pre += [np.argmax(model.predict(img))]
+#    pre = np.array(pre)    
+#    test_label = np.array(test_label)
+#    # print('pre shape:',pre.shape,'test label shape:',test_label.shape)
+#    acc = np.mean(pre == test_label)
+#    print('\r','*'*50)
+#    print('test accuracy:',acc)
+#    
+    # 计算混淆矩阵
+    # re = confusion_matrix(test_label , pre)
+    # print('\n'*2,'-'*10,'confuse matrix','-'*10)
+    # print(re)
+
+    # 计算各信号各信噪比下准确率
+    Signal_kind = os.listdir(test_data_path)
+    Signal_SNR= os.listdir(test_data_path+Signal_kind[0])
+    Signal_Num = len(Signal_SNR)
+
+    Signal_SNR = [int(i.split('_')[1].strip('dB')) for i in Signal_SNR]
+    Signal_SNR = list(set(Signal_SNR))
+    Signal_SNR.sort()
+    Signal_SNR = [str(i)+'dB' for i in Signal_SNR]
+    Signal_Num = Signal_Num/len(Signal_SNR)
+    # 建立pandas分类矩阵
+    result_divid = pd.DataFrame(columns = Signal_SNR, index = Signal_kind)
+
+    print('Signal kind:', Signal_kind)
+    print('Signal SNR:', Signal_SNR)
+    print('Signal Num:', Signal_Num)
+    
+    label_total = []
+    pre_total = []
+    for i in range(len(Signal_kind)):
+            for j in range(len(Signal_SNR)):
+                print('Signal kind:',Signal_kind[i],'; Signal SNR:',Signal_SNR[j])
+
+                label_divided = []
+                pre_divided = []
+                for num in range(int(Signal_Num)):
+                    file_path = test_data_path + Signal_kind[i] +'/'+ Signal_kind[i]+ '_'+ Signal_SNR[j]+ '_' + str(num+1).zfill(4) + '.jpg'
+                    img = image.load_img(file_path, target_size=(img_width, img_height))
+                    img = image.img_to_array(img)
+                    img = np.expand_dims(img, axis=0)
+                    img = preprocess_input(img)
             
-            # img = cv2.imread(path)
-            # img  = cv2.resize(img,(img_height,img_width))
-            # # print(img.shape)
-            # img = np.expand_dims(img,axis = 0)
-            # print(img.shape)
-            img = image.load_img(path, target_size=(img_width, img_width))
-            img = image.img_to_array(img)
-            img = np.expand_dims(img, axis=0)
-            img = preprocess_input(img)
-            pre += [np.argmax(model.predict(img))]
-        pre = np.array(pre)    
-        test_label = np.array(test_label)
-        # print('pre shape:',pre.shape,'test label shape:',test_label.shape)
-        acc = np.mean(pre==test_label)
-        print('\r','*'*50)
-        print('test accuracy:',acc)
-        f_acc.write(str(it)+','+str(acc)+'\n')
-        f_acc.flush()
+                    pre_divided += [np.argmax(model.predict(img))]
+                    label_divided += [i]
+                
+                label_total += label_divided
+                pre_total += pre_divided
+                
+                pre_divided = np.array(pre_divided)
+                label_divided = np.array(label_divided)
+                acc_divide = np.mean(pre_divided == label_divided)
+                result_divid.loc[Signal_kind[i], Signal_SNR[j]] = acc_divide 
+    
+    print('\n'*2,'-'*10,'divided result','-'*10)
+    print(result_divid)
 
-model.save('./models/keras/finetune_VGG16.h5')    
-f_log.close()
-f_acc.close()
+    label_total = np.array(label_total)
+    pre_total = np.array(pre_total)
+    acc = np.mean(label_total == pre_total)
+    print('total accuracy:',acc)
+    
+    # 计算混淆矩阵
+    re = confusion_matrix(label_total , pre_total)
+    print('\n'*2,'-'*10,'confuse matrix','-'*10)
+    print(re)
+    
+    # 保存结果
+    result_divid.to_csv(result_file)
