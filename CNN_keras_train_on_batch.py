@@ -98,7 +98,7 @@ optimizer = SGD()
 model.compile(optimizer=optimizer , loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
-    
+quit()
 for i in range(5000):
     train_data,train_label_onehot = get_random_batch(train_datapath,
                                                  train_label,
