@@ -11,9 +11,12 @@ def get_datalist(datapath):
     label = []
     cnt = 0
     print('number of category:', len(filename), filename)
+    print('-'*40)
+
     for i,path in enumerate(filename):
         dataname  = os.listdir(os.path.join(datapath, path))
         print(path,':',len(dataname))
+
         curr_path = []
         curr_label = []
         for file in dataname:
@@ -23,8 +26,10 @@ def get_datalist(datapath):
         cnt += len(curr_path)
         datafile.append(curr_path)
         label.append(curr_label)
-    print('*'*40)
+        
+    print('-'*40)
     print('Data Count:',cnt)
+    print('*'*40)
     return datafile, label
 
 def data_split_by_number(datafile, label):
@@ -52,11 +57,11 @@ def data_split_by_number(datafile, label):
     train_data_path = datafile
     train_label = label
     
+    for i in range(len(datapath)):
+        print('test number:', len(test_data_path[i]), 
+            'train number:', len(train_data_path[i]))
+    
     return train_data_path, train_label, test_data_path, test_label
 
 datapath, label = get_datalist(dataset_path)
 train_data_path, train_label, test_data_path, test_label = data_split_by_number(datapath, label)
-
-for i in range(len(datapath)):
-    print('test number:', len(test_data_path[i]), len(test_label[i]), 
-          'train number:', len(train_data_path[i]), len(train_label[i]))
