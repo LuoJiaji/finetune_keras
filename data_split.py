@@ -50,7 +50,7 @@ def data_split_by_number(datafile, label):
         while len(ind_set) != split_num[i]:
             ind_set.add(random.randrange(num))
 
-        # random sampling
+        # random sampling, get the index of the test data
         for ind in ind_set:
             curr_test_data_path.append(datafile[i][ind])
             curr_test_label.append(i)
