@@ -74,3 +74,4 @@ def data_split_by_number(datafile, label):
 
 datapath, label = get_datalist(dataset_path)
 train_data_path, train_label, test_data_path, test_label = data_split_by_number(datapath, label)
+
