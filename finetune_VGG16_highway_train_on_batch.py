@@ -8,20 +8,25 @@ from keras.models import Model, load_model
 from keras.preprocessing import image
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Dense, GlobalAveragePooling2D, Flatten
+from keras.layers import Dense, GlobalAveragePooling2D, Flatten, Dropout
 from keras.layers.convolutional import Conv2D
+from keras.layers.pooling import MaxPooling2D
 import keras.backend as K
 from keras.layers import Lambda
-from keras.utils.vis_utils import plot_model
+from keras.optimizers import SGD, RMSprop
+from keras.layers.normalization import BatchNormalization
+# from keras.utils.vis_utils import plot_model
 from sklearn.metrics import confusion_matrix
 
-batch_size = 128
+batch_size = 64
 img_width = 224
 img_height = 224
-STATE = 'eval'
+# STATE = 'eval'
+STATE = 'train'
 
-train_dataset_path = './dataset8/train/'
-test_data_path = './dataset8/test/'
+train_dataset_path = './dataset12/noise/train/'
+test_data_path = './dataset12/noise/test/'
+
 filename = os.listdir(train_dataset_path)
 n_calss = len(os.listdir(train_dataset_path))
 
@@ -106,7 +111,7 @@ test_datalist, test_label = get_datalist(test_data_path)
 #                                                  img_height)
 
 base_model = VGG16()
-base_model.summary()
+# base_model.summary()
 
 # interlayer_weights = base_model.get_layer('block2_conv2').get_weights()
 # print(interlayer_weights[0].shape)
@@ -115,7 +120,7 @@ base_model.summary()
 # print(interlayer_weights[0].shape)
 
 # VGG16一共23层
-# layers =  base_model.layers
+layers =  base_model.layers
 num_layers = len(base_model.layers)
 print('number of layers:',num_layers)
 
@@ -137,19 +142,43 @@ for x in base_model.trainable_weights:
 
 x1 = base_model.get_layer('block1_conv2').output
 x1 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block1_CNN')(x1)
+x1 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block1_CNN1')(x1)
+x1 = BatchNormalization(name= 'bn_block1_CNN1')(x1)
+x1 = MaxPooling2D((2, 2), strides=(2, 2), name='block1_CNN_pool1')(x1)
+x1 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block1_CNN2')(x1)
+x1 = BatchNormalization(name= 'bn_block1_CNN2')(x1)
+x1 = MaxPooling2D((2, 2), strides=(2, 2), name='block1_CNN_pool2')(x1)
+x1 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block1_CNN3')(x1)
+x1 = BatchNormalization(name= 'bn_block1_CNN3')(x1)
 x1 = GlobalAveragePooling2D(name='average_pooling1')(x1)
 
 x2 = base_model.get_layer('block2_conv2').output
-x2 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block2_CNN')(x2)
+x2 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block2_CNN1')(x2)
+x2 = BatchNormalization(name= 'bn_block2_CNN1')(x2)
+x2 = MaxPooling2D((2, 2), strides=(2, 2), name='block2_CNN_pool1')(x2)
+x2 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block2_CNN2')(x2)
+x2 = BatchNormalization(name= 'bn_block2_CNN2')(x2)
+x2 = MaxPooling2D((2, 2), strides=(2, 2), name='block2_CNN_pool2')(x2)
+x2 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block2_CNN3')(x2)
+x2 = BatchNormalization(name= 'bn_block2_CNN3')(x2)
 x2 = GlobalAveragePooling2D(name='average_pooling2')(x2)
 
 x3 = base_model.get_layer('block3_conv3').output
-x3 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block3_CNN')(x3)
+x3 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block3_CNN1')(x3)
+x3 = BatchNormalization(name= 'bn_block3_CNN1')(x3)
+x3 = MaxPooling2D((2, 2), strides=(2, 2), name='block3_CNN_pool')(x3)
+x3 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block3_CNN2')(x3)
+x3 = BatchNormalization(name= 'bn_block3_CNN2')(x3)
 x3 = GlobalAveragePooling2D(name='average_pooling3')(x3)
 
 x4 = base_model.get_layer('block4_conv3').output
 x4 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block4_CNN')(x4)
+x4 = BatchNormalization(name= 'bn_block4_CNN')(x4)
+x4 = MaxPooling2D((2, 2), strides=(2, 2), name='block4_CNN_pool')(x4)
+x4 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block4_CNN2')(x4)
+x4 = BatchNormalization(name= 'bn_block4_CNN2')(x4)
 x4 = GlobalAveragePooling2D(name='average_pooling4')(x4)
+# x4 = Flatten()(x4)
 
 x5 = base_model.get_layer('block5_conv3').output
 x5 = Conv2D(128, (3, 3), strides=(2,2), activation='relu', padding='same', name='block5_CNN')(x5)
@@ -159,17 +188,18 @@ x5 = GlobalAveragePooling2D(name='average_pooling5')(x5)
 x = my_concat([x1, x2, x3, x4, x5])
 x = Dense(128,activation='relu', name = 'fc_1')(x)
 x = Dense(128,activation='relu', name = 'fc_2')(x)
+# x = Dropout(0.5)(x)
 prediction = Dense(n_calss,activation='softmax',name='fc_output')(x)
-print(x.shape)
+# print(x.shape)
               
 model = Model(inputs=base_model.input, outputs=prediction)
 
-model.compile(optimizer='rmsprop', loss='categorical_crossentropy',metrics=['accuracy'])
-
+# model.compile(optimizer='rmsprop', loss='categorical_crossentropy',metrics=['accuracy'])
+model.compile(optimizer=SGD(), loss='categorical_crossentropy', metrics=['accuracy'])
 model.summary()
-plot_model(model, to_file='./model_visualization/VGG16_highway.png',show_shapes=True)
+# plot_model(model, to_file='./model_visualization/VGG16_highway.png',show_shapes=True)
 # model.save('./model/keras/VGG16_fc.h5')
-quit()
+# quit()
 
 # model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc2').output)
 
@@ -212,9 +242,9 @@ quit()
 print('STATE:',STATE)
 
 if STATE == 'train':
-    STEPS = 20000
-    log_file = './logs/finetune_VGG16_logs.csv'
-    acc_file = './logs/finetune_VGG16_acc.csv'
+    STEPS = 100000
+    log_file = './logs/finetune_VGG16_highway_logs.csv'
+    acc_file = './logs/finetune_VGG16_highway_acc.csv'
     f_log = open(log_file,'w')
     f_log.write('iter,loss,train acc'+'\n')
     f_log.flush()
@@ -239,7 +269,7 @@ if STATE == 'train':
         f_log.write(str(it)+','+str(train_loss)+','+str(train_accuracy)+'\n')
         f_log.flush()
 
-        if (it+1) % 100 == 0 or it + 1 == STEPS:
+        if (it+1) % 1000 == 0 or it + 1 == STEPS:
             pre = []
             l = len(test_datalist)
             for i, path in enumerate(test_datalist):
@@ -265,13 +295,13 @@ if STATE == 'train':
             f_acc.write(str(it)+','+str(acc)+'\n')
             f_acc.flush()
 
-    model.save('./models/keras/finetune_VGG16.h5')    
+    model.save('./models/keras/finetune_VGG16_highway.h5')    
     f_log.close()
     f_acc.close()
 
 elif STATE == 'eval':
-    model = load_model('./model/keras/finetune_VGG16.h5')
-    result_file = './model/keras/results_divide_VGG16.csv'
+    model = load_model('./model/keras/finetune_VGG16_highway.h5')
+    result_file = './model/keras/results_divide_VGG16_highway.csv'
     # model.summary()
     # quit()
 #    pre = []
